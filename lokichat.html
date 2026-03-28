@@ -3,150 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimalist Messenger</title>
+    <title>Architect WhatsApp V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background-color: #0b141a; color: #e9edef; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
-        .chat-bg { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-color: #0b141a; opacity: 0.06; position: absolute; inset: 0; z-index: -1; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
-        .message-in { background-color: #202c33; border-radius: 0 8px 8px 8px; align-self: flex-start; }
-        .message-out { background-color: #005c4b; border-radius: 8px 0 8px 8px; align-self: flex-end; }
-        .glass { background: rgba(32, 44, 51, 0.95); backdrop-filter: blur(10px); }
+        body { background-color: #0b141a; color: #e9edef; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
+        .chat-bg { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); opacity: 0.05; position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+        .sidebar { background-color: #111b21; border-right: 1px solid #222d34; }
+        .message-in { background-color: #202c33; border-radius: 0 8px 8px 8px; }
+        .message-out { background-color: #005c4b; border-radius: 8px 0 8px 8px; }
+        .user-item:hover { background-color: #2a3942; }
+        .active-user { background-color: #2a3942; }
+        input::placeholder { color: #8696a0; }
     </style>
 </head>
-<body class="flex h-screen">
+<body class="flex h-screen w-full">
 
-    <div class="w-1/3 border-r border-gray-700 flex flex-col glass">
-        <header class="p-4 bg-[#202c33] flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center font-bold">ME</div>
-                <span class="font-semibold">Sohbetler</span>
+    <aside class="sidebar w-1/3 flex flex-col z-10">
+        <header class="p-4 bg-[#202c33] flex justify-between items-center text-[#aebac1]">
+            <div class="w-10 h-10 rounded-full bg-[#51585c] flex items-center justify-center">
+                <i class="fas fa-user text-xl"></i>
             </div>
-            <button id="addUserBtn" class="text-emerald-500 hover:bg-gray-700 p-2 rounded-full transition">
-                <i class="fas fa-plus fa-lg"></i>
-            </button>
-        </header>
-
-        <div id="chatList" class="flex-1 overflow-y-auto">
-            </div>
-    </div>
-
-    <div class="flex-1 flex flex-col relative">
-        <div class="chat-bg"></div>
-        
-        <header id="chatHeader" class="p-4 bg-[#202c33] flex items-center gap-4 hidden">
-            <div id="activeAvatar" class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center"></div>
-            <div>
-                <h2 id="activeUserName" class="font-bold"></h2>
-                <p class="text-xs text-emerald-500">Çevrimiçi</p>
+            <div class="flex gap-5 items-center">
+                <button id="addContactBtn" class="hover:text-white transition-colors">
+                    <i class="fas fa-plus fa-lg"></i>
+                </button>
+                <i class="fas fa-ellipsis-v cursor-pointer"></i>
             </div>
         </header>
 
-        <div id="messageArea" class="flex-1 p-6 overflow-y-auto flex flex-col gap-3">
-            <div class="m-auto text-gray-500 text-sm text-center">
-                <i class="fas fa-lock mb-2"></i><br>
-                Mesajlar 12 saat sonra otomatik olarak silinir.
+        <div class="p-2 bg-[#111b21]">
+            <div class="bg-[#202c33] flex items-center px-4 py-1.5 rounded-lg">
+                <i class="fas fa-search text-xs text-[#8696a0] mr-4"></i>
+                <input type="text" placeholder="Aratın veya yeni sohbet başlatın" class="bg-transparent border-none outline-none text-sm w-full py-1">
             </div>
         </div>
 
-        <footer id="inputArea" class="p-4 bg-[#202c33] flex items-center gap-3 hidden">
-            <button class="text-gray-400 hover:text-white"><i class="far fa-smile fa-xl"></i></button>
-            <input id="msgInput" type="text" placeholder="Bir mesaj yazın" class="flex-1 bg-[#2a3942] p-3 rounded-lg outline-none text-white">
-            <button id="sendBtn" class="text-emerald-500"><i class="fas fa-paper-plane fa-xl"></i></button>
-        </footer>
-    </div>
-
-    <div id="modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-50">
-        <div class="bg-[#202c33] p-6 rounded-xl w-96 shadow-2xl">
-            <h3 class="text-xl font-bold mb-4">Yeni Kişi Ekle</h3>
-            <input id="userNameInput" type="text" placeholder="Kullanıcı Adı" class="w-full bg-[#2a3942] p-3 rounded-lg mb-4 outline-none border border-gray-600 focus:border-emerald-500">
-            <div class="flex justify-end gap-3">
-                <button onclick="toggleModal()" class="px-4 py-2 text-gray-400">İptal</button>
-                <button onclick="saveUser()" class="px-6 py-2 bg-emerald-600 rounded-lg font-bold">Kaydet</button>
+        <div id="contactList" class="flex-1 overflow-y-auto">
             </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col relative bg-[#0b141a]">
+        <div class="chat-bg"></div>
+        
+        <div id="welcomeScreen" class="flex-1 flex flex-col items-center justify-center z-10 text-center p-10">
+            <div class="w-64 h-64 mb-8 opacity-20 bg-emerald-500 rounded-full flex items-center justify-center">
+                <i class="fab fa-whatsapp text-[120px]"></i>
+            </div>
+            <h1 class="text-3xl font-light text-[#e9edef] mb-4">Web için WhatsApp</h1>
+            <p class="text-[#8696a0] text-sm leading-relaxed max-w-md">
+                Mesajlarınız uçtan uca şifrelenir. <br> 12 saat sonra otomatik olarak kendi kendini imha eden protokol aktiftir.
+            </p>
+        </div>
+
+        <div id="chatInterface" class="hidden flex-1 flex flex-col z-10 h-full">
+            <header class="p-3 bg-[#202c33] flex items-center justify-between border-l border-[#313d45]">
+                <div class="flex items-center gap-3">
+                    <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"></div>
+                    <div>
+                        <h2 id="headerName" class="font-semibold text-[#e9edef]"></h2>
+                        <p class="text-[11px] text-emerald-500">çevrimiçi</p>
+                    </div>
+                </div>
+                <div class="flex gap-6 text-[#aebac1] mr-4">
+                    <i class="fas fa-search cursor-pointer"></i>
+                    <i class="fas fa-ellipsis-v cursor-pointer"></i>
+                </div>
+            </header>
+
+            <div id="messageViewport" class="flex-1 overflow-y-auto p-10 flex flex-col gap-2">
+                </div>
+
+            <footer class="p-2 bg-[#202c33] flex items-center gap-4 px-4">
+                <i class="far fa-smile text-2xl text-[#8696a0] cursor-pointer"></i>
+                <i class="fas fa-paperclip text-xl text-[#8696a0] cursor-pointer"></i>
+                <input id="chatInput" type="text" placeholder="Bir mesaj yazın" class="flex-1 bg-[#2a3942] py-2.5 px-4 rounded-lg outline-none text-[#d1d7db]">
+                <button id="sendBtn" class="text-[#8696a0] hover:text-emerald-500">
+                    <i class="fas fa-paper-plane text-xl"></i>
+                </button>
+            </footer>
+        </div>
+    </main>
+
+    <div id="userModal" class="fixed inset-0 bg-[#0b141ab3] backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-[#233138] w-full max-w-md rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-5 bg-[#202c33] flex items-center gap-4 text-white">
+                <button onclick="closeModal()" class="hover:text-emerald-500"><i class="fas fa-arrow-left"></i></button>
+                <h3 class="font-bold text-lg">Yeni Sohbet</h3>
+            </div>
+            <div class="p-4 space-y-2 max-h-96 overflow-y-auto" id="availableUsersList">
+                </div>
         </div>
     </div>
 
     <script>
-        let users = JSON.parse(localStorage.getItem('wa_users')) || [];
-        let messages = JSON.parse(localStorage.getItem('wa_messages')) || [];
-        let activeChat = null;
+        // Database simülasyonu (HTML/JS Context)
+        const REAL_USERS = [
+            { id: 101, name: "Cid Kagenou", status: "Shadow Garden", color: "#6366f1" },
+            { id: 102, name: "Ryomen Sukuna", status: "Kişisel Lanet", color: "#ef4444" },
+            { id: 103, name: "Maki Zenin", status: "Silah Ustası", color: "#10b981" },
+            { id: 104, name: "Gojo Satoru", status: "Limitless", color: "#3b82f6" },
+            { id: 105, name: "Saitama", status: "Hobi olarak kahraman", color: "#f59e0b" }
+        ];
 
-        const EXPIRE_TIME = 12 * 60 * 60 * 1000; // 12 Saat
+        let activeContacts = JSON.parse(localStorage.getItem('wa_active_contacts')) || [];
+        let messages = JSON.parse(localStorage.getItem('wa_messages')) || [];
+        let currentChatId = null;
+        const EXPIRE_LIMIT = 12 * 60 * 60 * 1000; // 12 Saat
 
         function init() {
-            cleanOldMessages();
-            renderUserList();
-            setInterval(cleanOldMessages, 60000); // Her dakika kontrol et
+            renderContacts();
+            autoDeleteMessages();
+            setInterval(autoDeleteMessages, 30000); 
         }
 
-        function toggleModal() {
-            document.getElementById('modal').classList.toggle('hidden');
-        }
-
-        function saveUser() {
-            const name = document.getElementById('userNameInput').value.trim();
-            if (!name) return;
-
-            const newUser = {
-                id: Date.now(),
-                name: name,
-                avatarColor: `#${Math.floor(Math.random()*16777215).toString(16)}`
-            };
-
-            users.push(newUser);
-            localStorage.setItem('wa_users', JSON.stringify(users));
-            document.getElementById('userNameInput').value = '';
-            toggleModal();
-            renderUserList();
-        }
-
-        function renderUserList() {
-            const list = document.getElementById('chatList');
-            list.innerHTML = '';
-            users.forEach(user => {
+        function renderContacts() {
+            const container = document.getElementById('contactList');
+            container.innerHTML = '';
+            
+            activeContacts.forEach(user => {
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-4 p-4 hover:bg-[#2a3942] cursor-pointer transition border-b border-gray-800/50";
-                div.onclick = () => openChat(user);
+                div.className = `user-item flex items-center gap-4 p-4 cursor-pointer transition-all border-b border-[#222d34] ${currentChatId === user.id ? 'active-user' : ''}`;
+                div.onclick = () => startChat(user);
                 div.innerHTML = `
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-lg" style="background-color: ${user.avatarColor}">
-                        ${user.name.charAt(0).toUpperCase()}
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-lg" style="background-color: ${user.color}">
+                        ${user.name.charAt(0)}
                     </div>
-                    <div class="flex-1">
-                        <div class="flex justify-between">
-                            <h4 class="font-semibold">${user.name}</h4>
-                            <span class="text-xs text-gray-500">12s</span>
+                    <div class="flex-1 overflow-hidden">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-medium text-[#e9edef]">${user.name}</h4>
+                            <span class="text-[10px] text-[#8696a0]">12s Sınırı</span>
                         </div>
-                        <p class="text-sm text-gray-400 truncate">Sohbeti başlatmak için tıkla...</p>
+                        <p class="text-xs text-[#8696a0] truncate">${user.status}</p>
                     </div>
                 `;
-                list.appendChild(div);
+                container.appendChild(div);
             });
         }
 
-        function openChat(user) {
-            activeChat = user;
-            document.getElementById('chatHeader').classList.remove('hidden');
-            document.getElementById('inputArea').classList.remove('hidden');
-            document.getElementById('activeUserName').innerText = user.name;
-            document.getElementById('activeAvatar').style.backgroundColor = user.avatarColor;
-            document.getElementById('activeAvatar').innerText = user.name.charAt(0).toUpperCase();
+        document.getElementById('addContactBtn').onclick = () => {
+            const modal = document.getElementById('userModal');
+            const list = document.getElementById('availableUsersList');
+            modal.classList.remove('hidden');
+            list.innerHTML = '';
+
+            REAL_USERS.forEach(user => {
+                const item = document.createElement('div');
+                item.className = "flex items-center gap-4 p-3 hover:bg-[#111b21] rounded-lg cursor-pointer transition-all border-b border-gray-700/30";
+                item.onclick = () => {
+                    if (!activeContacts.find(c => c.id === user.id)) {
+                        activeContacts.push(user);
+                        localStorage.setItem('wa_active_contacts', JSON.stringify(activeContacts));
+                    }
+                    closeModal();
+                    renderContacts();
+                    startChat(user);
+                };
+                item.innerHTML = `
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white" style="background-color: ${user.color}">
+                        ${user.name.charAt(0)}
+                    </div>
+                    <div>
+                        <p class="font-bold text-white">${user.name}</p>
+                        <p class="text-xs text-gray-400">${user.status}</p>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        };
+
+        function closeModal() {
+            document.getElementById('userModal').classList.add('hidden');
+        }
+
+        function startChat(user) {
+            currentChatId = user.id;
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('chatInterface').classList.remove('hidden');
+            document.getElementById('headerName').innerText = user.name;
+            const avatar = document.getElementById('headerAvatar');
+            avatar.innerText = user.name.charAt(0);
+            avatar.style.backgroundColor = user.color;
+            
+            renderContacts(); // Update active state highlight
             renderMessages();
         }
 
         function sendMessage() {
-            const input = document.getElementById('msgInput');
+            const input = document.getElementById('chatInput');
             const text = input.value.trim();
-            if (!text || !activeChat) return;
+            if (!text || !currentChatId) return;
 
             const msg = {
                 id: Date.now(),
-                sender: 'me',
-                receiverId: activeChat.id,
+                chatId: currentChatId,
                 text: text,
-                timestamp: Date.now()
+                time: Date.now(),
+                sender: 'me'
             };
 
             messages.push(msg);
@@ -156,37 +209,37 @@
         }
 
         function renderMessages() {
-            const area = document.getElementById('messageArea');
-            area.innerHTML = '';
-            const filtered = messages.filter(m => m.receiverId === activeChat.id);
-
-            filtered.forEach(m => {
+            const viewport = document.getElementById('messageViewport');
+            viewport.innerHTML = '';
+            
+            const chatMsgs = messages.filter(m => m.chatId === currentChatId);
+            chatMsgs.forEach(m => {
                 const div = document.createElement('div');
-                div.className = `max-w-[70%] p-2 px-4 shadow-md mb-2 ${m.sender === 'me' ? 'message-out' : 'message-in'}`;
+                div.className = `max-w-[80%] p-2 px-3 shadow-sm flex flex-col ${m.sender === 'me' ? 'message-out self-end' : 'message-in self-start'}`;
                 div.innerHTML = `
-                    <p class="text-[15px] leading-relaxed">${m.text}</p>
-                    <span class="text-[10px] text-gray-400 block text-right mt-1">
-                        ${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    <span class="text-[14.5px] text-[#e9edef]">${m.text}</span>
+                    <span class="text-[9px] text-[#aebac1] self-end mt-1 uppercase">
+                        ${new Date(m.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                     </span>
                 `;
-                area.appendChild(div);
+                viewport.appendChild(div);
             });
-            area.scrollTop = area.scrollHeight;
+            viewport.scrollTop = viewport.scrollHeight;
         }
 
-        function cleanOldMessages() {
+        function autoDeleteMessages() {
             const now = Date.now();
-            const initialCount = messages.length;
-            messages = messages.filter(m => (now - m.timestamp) < EXPIRE_TIME);
-            if (messages.length !== initialCount) {
+            const originalLength = messages.length;
+            messages = messages.filter(m => (now - m.time) < EXPIRE_LIMIT);
+            
+            if (messages.length !== originalLength) {
                 localStorage.setItem('wa_messages', JSON.stringify(messages));
-                if (activeChat) renderMessages();
+                if (currentChatId) renderMessages();
             }
         }
 
-        document.getElementById('addUserBtn').onclick = toggleModal;
         document.getElementById('sendBtn').onclick = sendMessage;
-        document.getElementById('msgInput').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
+        document.getElementById('chatInput').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
 
         init();
     </script>
