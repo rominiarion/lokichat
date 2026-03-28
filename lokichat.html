@@ -3,162 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LokiChat | Private</title>
+    <title>Minimalist Messenger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --bg: #000; --surf: #111; --text: #fff; --msg-me: #222; --msg-them: #333; }
-        body { font-family: sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
-        
-        /* Kayıt Ekranı */
-        #auth { position: fixed; inset: 0; background: #000; z-index: 999; display: flex; align-items: center; justify-content: center; }
-        .box { background: var(--surf); padding: 30px; border-radius: 15px; border: 1px solid #333; text-align: center; width: 80%; }
-        input { width: 100%; padding: 12px; margin: 10px 0; background: #000; color: #fff; border: 1px solid #444; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #fff; color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
-        /* Ana Ekran */
-        header { padding: 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
-        #chat-list { flex: 1; overflow-y: auto; }
-        .user-row { padding: 15px; border-bottom: 1px solid #111; display: flex; align-items: center; cursor: pointer; }
-        .user-row:hover { background: #050505; }
-        .avatar { width: 45px; height: 45px; background: #222; border-radius: 50%; margin-right: 15px; }
-
-        /* Sohbet Penceresi */
-        #chat-win { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; }
-        #msgs { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .m { max-width: 75%; padding: 10px 15px; border-radius: 15px; font-size: 14px; }
-        .sent { align-self: flex-end; background: var(--msg-me); border-bottom-right-radius: 2px; }
-        .recv { align-self: flex-start; background: var(--msg-them); border-bottom-left-radius: 2px; }
-
-        /* + Butonu */
-        .add-btn { position: fixed; bottom: 30px; right: 20px; width: 60px; height: 60px; background: #fff; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; border: none; box-shadow: 0 0 20px rgba(255,255,255,0.1); }
-        
-        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; }
+        body { background-color: #0b141a; color: #e9edef; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        .chat-bg { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-color: #0b141a; opacity: 0.06; position: absolute; inset: 0; z-index: -1; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+        .message-in { background-color: #202c33; border-radius: 0 8px 8px 8px; align-self: flex-start; }
+        .message-out { background-color: #005c4b; border-radius: 8px 0 8px 8px; align-self: flex-end; }
+        .glass { background: rgba(32, 44, 51, 0.95); backdrop-filter: blur(10px); }
     </style>
 </head>
-<body>
+<body class="flex h-screen">
 
-<div id="auth">
-    <div class="box">
-        <h2>LokiChat</h2>
-        <input type="text" id="myname" placeholder="Adını yaz...">
-        <button onclick="login()">Hesap Oluştur</button>
+    <div class="w-1/3 border-r border-gray-700 flex flex-col glass">
+        <header class="p-4 bg-[#202c33] flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center font-bold">ME</div>
+                <span class="font-semibold">Sohbetler</span>
+            </div>
+            <button id="addUserBtn" class="text-emerald-500 hover:bg-gray-700 p-2 rounded-full transition">
+                <i class="fas fa-plus fa-lg"></i>
+            </button>
+        </header>
+
+        <div id="chatList" class="flex-1 overflow-y-auto">
+            </div>
     </div>
-</div>
 
-<header>
-    <span>LokiChat</span>
-    <small id="status" style="color: #666;"></small>
-</header>
+    <div class="flex-1 flex flex-col relative">
+        <div class="chat-bg"></div>
+        
+        <header id="chatHeader" class="p-4 bg-[#202c33] flex items-center gap-4 hidden">
+            <div id="activeAvatar" class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center"></div>
+            <div>
+                <h2 id="activeUserName" class="font-bold"></h2>
+                <p class="text-xs text-emerald-500">Çevrimiçi</p>
+            </div>
+        </header>
 
-<div id="chat-list"></div>
-
-<button class="add-btn" onclick="showModal()">+</button>
-
-<div id="modal">
-    <div class="box">
-        <h3>Kişi Ekle</h3>
-        <div id="global-users">
-            <div class="user-row" onclick="add('Arda')">Arda</div>
-            <div class="user-row" onclick="add('Selin')">Selin</div>
-            <div class="user-row" onclick="add('Mert')">Mert</div>
-            <div class="user-row" onclick="add('Can')">Can</div>
+        <div id="messageArea" class="flex-1 p-6 overflow-y-auto flex flex-col gap-3">
+            <div class="m-auto text-gray-500 text-sm text-center">
+                <i class="fas fa-lock mb-2"></i><br>
+                Mesajlar 12 saat sonra otomatik olarak silinir.
+            </div>
         </div>
-        <button onclick="hideModal()" style="margin-top: 10px; background: #333; color: #fff;">Kapat</button>
+
+        <footer id="inputArea" class="p-4 bg-[#202c33] flex items-center gap-3 hidden">
+            <button class="text-gray-400 hover:text-white"><i class="far fa-smile fa-xl"></i></button>
+            <input id="msgInput" type="text" placeholder="Bir mesaj yazın" class="flex-1 bg-[#2a3942] p-3 rounded-lg outline-none text-white">
+            <button id="sendBtn" class="text-emerald-500"><i class="fas fa-paper-plane fa-xl"></i></button>
+        </footer>
     </div>
-</div>
 
-<div id="chat-win">
-    <header>
-        <button onclick="hideChat()" style="background:none; color:#fff; border:none; font-size:20px;">←</button>
-        <span id="target-name"></span>
-        <span></span>
-    </header>
-    <div id="msgs"></div>
-    <div style="padding: 15px; border-top: 1px solid #222; display: flex; gap: 10px;">
-        <input type="text" id="m-inp" placeholder="Mesajın...">
-        <button onclick="send()" style="width: auto;">Gönder</button>
+    <div id="modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-50">
+        <div class="bg-[#202c33] p-6 rounded-xl w-96 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4">Yeni Kişi Ekle</h3>
+            <input id="userNameInput" type="text" placeholder="Kullanıcı Adı" class="w-full bg-[#2a3942] p-3 rounded-lg mb-4 outline-none border border-gray-600 focus:border-emerald-500">
+            <div class="flex justify-end gap-3">
+                <button onclick="toggleModal()" class="px-4 py-2 text-gray-400">İptal</button>
+                <button onclick="saveUser()" class="px-6 py-2 bg-emerald-600 rounded-lg font-bold">Kaydet</button>
+            </div>
+        </div>
     </div>
-</div>
 
-<script>
-    let me = localStorage.getItem('loki_me');
-    let chats = JSON.parse(localStorage.getItem('loki_db')) || {};
-    let active = "";
+    <script>
+        let users = JSON.parse(localStorage.getItem('wa_users')) || [];
+        let messages = JSON.parse(localStorage.getItem('wa_messages')) || [];
+        let activeChat = null;
 
-    window.onload = () => {
-        if(me) { 
-            document.getElementById('auth').style.display = 'none';
-            document.getElementById('status').innerText = me;
-            renderList();
+        const EXPIRE_TIME = 12 * 60 * 60 * 1000; // 12 Saat
+
+        function init() {
+            cleanOldMessages();
+            renderUserList();
+            setInterval(cleanOldMessages, 60000); // Her dakika kontrol et
         }
-        cleaner(); // Eski mesajları uçur
-    };
 
-    function login() {
-        let n = document.getElementById('myname').value;
-        if(!n) return;
-        localStorage.setItem('loki_me', n);
-        location.reload();
-    }
+        function toggleModal() {
+            document.getElementById('modal').classList.toggle('hidden');
+        }
 
-    function showModal() { document.getElementById('modal').style.display = 'flex'; }
-    function hideModal() { document.getElementById('modal').style.display = 'none'; }
+        function saveUser() {
+            const name = document.getElementById('userNameInput').value.trim();
+            if (!name) return;
 
-    function add(name) {
-        if(!chats[name]) chats[name] = [];
-        save();
-        renderList();
-        hideModal();
-    }
+            const newUser = {
+                id: Date.now(),
+                name: name,
+                avatarColor: `#${Math.floor(Math.random()*16777215).toString(16)}`
+            };
 
-    function renderList() {
-        let html = "";
-        Object.keys(chats).forEach(u => {
-            html += `<div class="user-row" onclick="openChat('${u}')">
-                <div class="avatar"></div>
-                <div><b>${u}</b><br><small style="color:#555">Sohbeti aç</small></div>
-            </div>`;
-        });
-        document.getElementById('chat-list').innerHTML = html;
-    }
+            users.push(newUser);
+            localStorage.setItem('wa_users', JSON.stringify(users));
+            document.getElementById('userNameInput').value = '';
+            toggleModal();
+            renderUserList();
+        }
 
-    function openChat(u) {
-        active = u;
-        document.getElementById('target-name').innerText = u;
-        document.getElementById('chat-win').style.display = 'flex';
-        renderMsgs();
-    }
+        function renderUserList() {
+            const list = document.getElementById('chatList');
+            list.innerHTML = '';
+            users.forEach(user => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-4 p-4 hover:bg-[#2a3942] cursor-pointer transition border-b border-gray-800/50";
+                div.onclick = () => openChat(user);
+                div.innerHTML = `
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-lg" style="background-color: ${user.avatarColor}">
+                        ${user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between">
+                            <h4 class="font-semibold">${user.name}</h4>
+                            <span class="text-xs text-gray-500">12s</span>
+                        </div>
+                        <p class="text-sm text-gray-400 truncate">Sohbeti başlatmak için tıkla...</p>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
 
-    function hideChat() { document.getElementById('chat-win').style.display = 'none'; }
+        function openChat(user) {
+            activeChat = user;
+            document.getElementById('chatHeader').classList.remove('hidden');
+            document.getElementById('inputArea').classList.remove('hidden');
+            document.getElementById('activeUserName').innerText = user.name;
+            document.getElementById('activeAvatar').style.backgroundColor = user.avatarColor;
+            document.getElementById('activeAvatar').innerText = user.name.charAt(0).toUpperCase();
+            renderMessages();
+        }
 
-    function send() {
-        let i = document.getElementById('m-inp');
-        if(!i.value) return;
-        chats[active].push({ t: i.value, s: 'me', d: Date.now() });
-        save();
-        i.value = "";
-        renderMsgs();
-    }
+        function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const text = input.value.trim();
+            if (!text || !activeChat) return;
 
-    function renderMsgs() {
-        let mDiv = document.getElementById('msgs');
-        mDiv.innerHTML = "";
-        chats[active].forEach(m => {
-            mDiv.innerHTML += `<div class="m ${m.s == 'me' ? 'sent' : 'recv'}">${m.t}</div>`;
-        });
-        mDiv.scrollTop = mDiv.scrollHeight;
-    }
+            const msg = {
+                id: Date.now(),
+                sender: 'me',
+                receiverId: activeChat.id,
+                text: text,
+                timestamp: Date.now()
+            };
 
-    function save() { localStorage.setItem('loki_db', JSON.stringify(chats)); }
+            messages.push(msg);
+            localStorage.setItem('wa_messages', JSON.stringify(messages));
+            input.value = '';
+            renderMessages();
+        }
 
-    // 24 SAAT SONRA KENDİNİ İMHA ETME SİSTEMİ (PATLAMA ÖZELLİĞİ)
-    function cleaner() {
-        const day = 24 * 60 * 60 * 1000;
-        const now = Date.now();
-        Object.keys(chats).forEach(u => {
-            chats[u] = chats[u].filter(m => (now - m.d) < day);
-        });
-        save();
-    }
-</script>
+        function renderMessages() {
+            const area = document.getElementById('messageArea');
+            area.innerHTML = '';
+            const filtered = messages.filter(m => m.receiverId === activeChat.id);
+
+            filtered.forEach(m => {
+                const div = document.createElement('div');
+                div.className = `max-w-[70%] p-2 px-4 shadow-md mb-2 ${m.sender === 'me' ? 'message-out' : 'message-in'}`;
+                div.innerHTML = `
+                    <p class="text-[15px] leading-relaxed">${m.text}</p>
+                    <span class="text-[10px] text-gray-400 block text-right mt-1">
+                        ${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </span>
+                `;
+                area.appendChild(div);
+            });
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function cleanOldMessages() {
+            const now = Date.now();
+            const initialCount = messages.length;
+            messages = messages.filter(m => (now - m.timestamp) < EXPIRE_TIME);
+            if (messages.length !== initialCount) {
+                localStorage.setItem('wa_messages', JSON.stringify(messages));
+                if (activeChat) renderMessages();
+            }
+        }
+
+        document.getElementById('addUserBtn').onclick = toggleModal;
+        document.getElementById('sendBtn').onclick = sendMessage;
+        document.getElementById('msgInput').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
+
+        init();
+    </script>
 </body>
 </html>
