@@ -3,205 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LokiChat | Dark</title>
+    <title>LokiChat | Private</title>
     <style>
-        :root {
-            --bg: #000000;
-            --surface: #1a1a1a;
-            --text: #ffffff;
-            --accent: #ffffff;
-            --msg-sent: #333333;
-        }
-
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+        :root { --bg: #000; --surf: #111; --text: #fff; --msg-me: #222; --msg-them: #333; }
+        body { font-family: sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
         
-        /* Giriş Ekranı */
-        #auth-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
-        }
+        /* Kayıt Ekranı */
+        #auth { position: fixed; inset: 0; background: #000; z-index: 999; display: flex; align-items: center; justify-content: center; }
+        .box { background: var(--surf); padding: 30px; border-radius: 15px; border: 1px solid #333; text-align: center; width: 80%; }
+        input { width: 100%; padding: 12px; margin: 10px 0; background: #000; color: #fff; border: 1px solid #444; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #fff; color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
-        .auth-card { background: var(--surface); padding: 30px; border-radius: 20px; width: 80%; max-width: 300px; text-align: center; border: 1px solid #333; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #333; border-radius: 10px; background: #000; color: #fff; box-sizing: border-box; }
-        button { background: var(--accent); border: none; padding: 12px 20px; color: #000; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; }
-
-        /* Ana Uygulama */
-        #main-app { display: flex; flex-direction: column; height: 100vh; }
-        header { padding: 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: bold; }
-
-        /* Sohbet Listesi */
+        /* Ana Ekran */
+        header { padding: 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
         #chat-list { flex: 1; overflow-y: auto; }
-        .chat-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #111; cursor: pointer; }
-        .avatar { width: 50px; height: 50px; border-radius: 50%; background: #333; margin-right: 15px; object-fit: cover; }
-        
+        .user-row { padding: 15px; border-bottom: 1px solid #111; display: flex; align-items: center; cursor: pointer; }
+        .user-row:hover { background: #050505; }
+        .avatar { width: 45px; height: 45px; background: #222; border-radius: 50%; margin-right: 15px; }
+
         /* Sohbet Penceresi */
-        #chat-window {
-            position: fixed; top: 0; right: -100%; width: 100%; height: 100%;
-            background: var(--bg); transition: 0.3s; display: flex; flex-direction: column;
-        }
-        #chat-window.active { right: 0; }
-        .chat-header { padding: 15px; border-bottom: 1px solid #333; display: flex; align-items: center; }
+        #chat-win { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; }
+        #msgs { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .m { max-width: 75%; padding: 10px 15px; border-radius: 15px; font-size: 14px; }
+        .sent { align-self: flex-end; background: var(--msg-me); border-bottom-right-radius: 2px; }
+        .recv { align-self: flex-start; background: var(--msg-them); border-bottom-left-radius: 2px; }
 
-        #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 70%; padding: 10px 15px; border-radius: 18px; font-size: 14px; line-height: 1.4; }
-        .sent { align-self: flex-end; background: var(--msg-sent); color: white; border-bottom-right-radius: 4px; }
-        .received { align-self: flex-start; background: #222; color: #ccc; border-bottom-left-radius: 4px; }
-
-        /* WhatsApp + Butonu */
-        .add-btn {
-            position: fixed; bottom: 30px; right: 20px; width: 60px; height: 60px;
-            background: white; color: black; border-radius: 50%; display: flex;
-            align-items: center; justify-content: center; font-size: 30px; border: none; box-shadow: 0 4px 15px rgba(255,255,255,0.1);
-        }
-
-        /* Kullanıcı Ekleme Modalı */
-        #user-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; justify-content:center; align-items:center; }
+        /* + Butonu */
+        .add-btn { position: fixed; bottom: 30px; right: 20px; width: 60px; height: 60px; background: #fff; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; border: none; box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+        
+        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen">
-        <div class="auth-card">
-            <h1>LokiChat</h1>
-            <input type="text" id="user-name" placeholder="İsminizi yazın...">
-            <button onclick="saveAccount()">Hesap Oluştur</button>
-        </div>
+<div id="auth">
+    <div class="box">
+        <h2>LokiChat</h2>
+        <input type="text" id="myname" placeholder="Adını yaz...">
+        <button onclick="login()">Hesap Oluştur</button>
     </div>
+</div>
 
-    <div id="main-app">
-        <header>
-            <span>LokiChat</span>
-            <span style="font-size: 14px; opacity: 0.5;" id="my-name-display"></span>
-        </header>
-        <div id="chat-list">
-            </div>
-        <button class="add-btn" onclick="openUserModal()">+</button>
-    </div>
+<header>
+    <span>LokiChat</span>
+    <small id="status" style="color: #666;"></small>
+</header>
 
-    <div id="chat-window">
-        <div class="chat-header">
-            <button onclick="closeChat()" style="background:none; color:white; border:none; font-size:24px; margin-right:15px;">←</button>
-            <h4 id="chat-target-name"></h4>
+<div id="chat-list"></div>
+
+<button class="add-btn" onclick="showModal()">+</button>
+
+<div id="modal">
+    <div class="box">
+        <h3>Kişi Ekle</h3>
+        <div id="global-users">
+            <div class="user-row" onclick="add('Arda')">Arda</div>
+            <div class="user-row" onclick="add('Selin')">Selin</div>
+            <div class="user-row" onclick="add('Mert')">Mert</div>
+            <div class="user-row" onclick="add('Can')">Can</div>
         </div>
-        <div id="messages"></div>
-        <div style="padding: 20px; display: flex; gap: 10px; border-top: 1px solid #333;">
-            <input type="text" id="msg-input" placeholder="Mesaj...">
-            <button onclick="sendMsg()" style="width: auto; padding: 0 20px;">Gönder</button>
-        </div>
+        <button onclick="hideModal()" style="margin-top: 10px; background: #333; color: #fff;">Kapat</button>
     </div>
+</div>
 
-    <div id="user-modal">
-        <div class="auth-card">
-            <h3>Kullanıcı Ekle</h3>
-            <div id="available-users">
-                <div class="chat-item" onclick="addUser('Elon Musk')">Elon Musk (Ekle)</div>
-                <div class="chat-item" onclick="addUser('Loki Admin')">Loki Admin (Ekle)</div>
-            </div>
-            <button onclick="closeUserModal()" style="margin-top:10px;">Kapat</button>
-        </div>
+<div id="chat-win">
+    <header>
+        <button onclick="hideChat()" style="background:none; color:#fff; border:none; font-size:20px;">←</button>
+        <span id="target-name"></span>
+        <span></span>
+    </header>
+    <div id="msgs"></div>
+    <div style="padding: 15px; border-top: 1px solid #222; display: flex; gap: 10px;">
+        <input type="text" id="m-inp" placeholder="Mesajın...">
+        <button onclick="send()" style="width: auto;">Gönder</button>
     </div>
+</div>
 
-    <script>
-        let currentUser = localStorage.getItem('lokiUser');
-        let chatData = JSON.parse(localStorage.getItem('lokiChats')) || {};
+<script>
+    let me = localStorage.getItem('loki_me');
+    let chats = JSON.parse(localStorage.getItem('loki_db')) || {};
+    let active = "";
 
-        // 1. OTOMATİK GİRİŞ & HESAP KONTROLÜ
-        window.onload = () => {
-            if (!currentUser) {
-                document.getElementById('auth-screen').style.display = 'flex';
-            } else {
-                showMainApp();
-            }
-            cleanOldMessages(); // 24 saat kontrolü
-        };
-
-        function saveAccount() {
-            const name = document.getElementById('user-name').value;
-            if (name) {
-                localStorage.setItem('lokiUser', name);
-                currentUser = name;
-                showMainApp();
-            }
+    window.onload = () => {
+        if(me) { 
+            document.getElementById('auth').style.display = 'none';
+            document.getElementById('status').innerText = me;
+            renderList();
         }
+        cleaner(); // Eski mesajları uçur
+    };
 
-        function showMainApp() {
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('my-name-display').innerText = currentUser;
-            renderChatList();
-        }
+    function login() {
+        let n = document.getElementById('myname').value;
+        if(!n) return;
+        localStorage.setItem('loki_me', n);
+        location.reload();
+    }
 
-        // 2. KULLANICI EKLEME (+)
-        function openUserModal() { document.getElementById('user-modal').style.display = 'flex'; }
-        function closeUserModal() { document.getElementById('user-modal').style.display = 'none'; }
+    function showModal() { document.getElementById('modal').style.display = 'flex'; }
+    function hideModal() { document.getElementById('modal').style.display = 'none'; }
 
-        function addUser(name) {
-            if (!chatData[name]) chatData[name] = [];
-            localStorage.setItem('lokiChats', JSON.stringify(chatData));
-            renderChatList();
-            closeUserModal();
-        }
+    function add(name) {
+        if(!chats[name]) chats[name] = [];
+        save();
+        renderList();
+        hideModal();
+    }
 
-        function renderChatList() {
-            const list = document.getElementById('chat-list');
-            list.innerHTML = "";
-            Object.keys(chatData).forEach(user => {
-                list.innerHTML += `
-                    <div class="chat-item" onclick="openChat('${user}')">
-                        <div class="avatar"></div>
-                        <div class="chat-info"><h4>${user}</h4><p>Sohbeti başlat...</p></div>
-                    </div>`;
-            });
-        }
+    function renderList() {
+        let html = "";
+        Object.keys(chats).forEach(u => {
+            html += `<div class="user-row" onclick="openChat('${u}')">
+                <div class="avatar"></div>
+                <div><b>${u}</b><br><small style="color:#555">Sohbeti aç</small></div>
+            </div>`;
+        });
+        document.getElementById('chat-list').innerHTML = html;
+    }
 
-        // 3. MESAJLAŞMA VE KAYDETME
-        let activeChat = "";
-        function openChat(user) {
-            activeChat = user;
-            document.getElementById('chat-target-name').innerText = user;
-            document.getElementById('chat-window').classList.add('active');
-            renderMessages();
-        }
+    function openChat(u) {
+        active = u;
+        document.getElementById('target-name').innerText = u;
+        document.getElementById('chat-win').style.display = 'flex';
+        renderMsgs();
+    }
 
-        function closeChat() { document.getElementById('chat-window').classList.remove('active'); }
+    function hideChat() { document.getElementById('chat-win').style.display = 'none'; }
 
-        function sendMsg() {
-            const inp = document.getElementById('msg-input');
-            if (!inp.value) return;
+    function send() {
+        let i = document.getElementById('m-inp');
+        if(!i.value) return;
+        chats[active].push({ t: i.value, s: 'me', d: Date.now() });
+        save();
+        i.value = "";
+        renderMsgs();
+    }
 
-            const msgObj = {
-                text: inp.value,
-                sender: 'me',
-                time: Date.now()
-            };
+    function renderMsgs() {
+        let mDiv = document.getElementById('msgs');
+        mDiv.innerHTML = "";
+        chats[active].forEach(m => {
+            mDiv.innerHTML += `<div class="m ${m.s == 'me' ? 'sent' : 'recv'}">${m.t}</div>`;
+        });
+        mDiv.scrollTop = mDiv.scrollHeight;
+    }
 
-            chatData[activeChat].push(msgObj);
-            localStorage.setItem('lokiChats', JSON.stringify(chatData));
-            inp.value = "";
-            renderMessages();
-        }
+    function save() { localStorage.setItem('loki_db', JSON.stringify(chats)); }
 
-        function renderMessages() {
-            const container = document.getElementById('messages');
-            container.innerHTML = "";
-            chatData[activeChat].forEach(m => {
-                const div = document.createElement('div');
-                div.className = `msg ${m.sender === 'me' ? 'sent' : 'received'}`;
-                div.innerText = m.text;
-                container.appendChild(div);
-            });
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // 4. 24 SAAT SONRA SİLME MANTIĞI
-        function cleanOldMessages() {
-            const dayInMs = 24 * 60 * 60 * 1000;
-            const now = Date.now();
-            
-            Object.keys(chatData).forEach(user => {
-                chatData[user] = chatData[user].filter(m => (now - m.time) < dayInMs);
-            });
-            localStorage.setItem('lokiChats', JSON.stringify(chatData));
-        }
-    </script>
+    // 24 SAAT SONRA KENDİNİ İMHA ETME SİSTEMİ (PATLAMA ÖZELLİĞİ)
+    function cleaner() {
+        const day = 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        Object.keys(chats).forEach(u => {
+            chats[u] = chats[u].filter(m => (now - m.d) < day);
+        });
+        save();
+    }
+</script>
 </body>
 </html>
